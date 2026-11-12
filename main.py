@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 
 set_website_title(" Basketball Tracker")
-set_site_information(author= "Justin Serio"
+set_site_information(author= "Justin Serio",
                  description="A basketball statistic tracker for teams",
                  sources="Converstation with LLM.pdf",
                  planning="Copy of CS1 Final Project 1_ Design.pdf",
