@@ -1,7 +1,9 @@
+
 from dataclasses import dataclass, field
 from drafter import *
 
 set_website_title("Basketball Tracker")
+
 set_site_information(
     author="Justin Serio",
     description="A basketball statistic tracker for teams",
@@ -9,13 +11,12 @@ set_site_information(
     planning="Copy of CS1 Final Project 1_ Design.pdf",
     links=["https://github.com/jdserio/cisc108-final-demo-"]
 )
+
 hide_debug_information()
 set_website_framed(False)
 
 
-from dataclasses import dataclass, field
-from drafter import *
-
+# PLAYER DATA
 
 @dataclass
 class Player:
@@ -27,6 +28,8 @@ class Player:
     assists: int
 
 
+# WEBSITE DATA
+
 @dataclass
 class State:
     """Stores all information for the basketball tracker."""
@@ -36,19 +39,31 @@ class State:
     selected_player: str = ""
 
 
+# HOME PAGE
+
 @route
 def index(state: State) -> Page:
     """Displays the basketball tracker homepage."""
     return Page(state, [
-        Text("BASKETBALL TRACKER"),
+        Text("🏀 BASKETBALL TRACKER 🏀"),
         Text("--------------------"),
-        Text("Welcome to your basketball team dashboard!"),
-        Text("Manage players and track their statistics."),
+        Text("Welcome to your basketball dashboard!"),
         Text("Team: " + state.team_name),
         Text("Games Played: " + str(state.games_played)),
-        Text("Total Players: " + str(len(state.players)))
+        Text("Total Players: " + str(len(state.players))),
+        Text("--------------------"),
+        Text("WHAT WOULD YOU LIKE TO DO?"),
+        Button("View Players", players),
+        Button("Add Player", add_player),
+        Button("Player Statistics", stats),
+        Button("Update Statistics", update_player),
+        Button("Leaderboard", leaderboard),
+        Button("Delete Player", delete_player),
+        Button("Team Settings", team_settings)
     ])
 
+
+# VIEW PLAYERS
 
 @route
 def players(state: State) -> Page:
@@ -77,6 +92,8 @@ def players(state: State) -> Page:
     return Page(state, content)
 
 
+# ADD PLAYER
+
 @route
 def add_player(state: State) -> Page:
     """Allows users to add a new basketball player."""
@@ -98,6 +115,7 @@ def add_player_submit(state: State, name: str,
                       jersey: str, points: str,
                       rebounds: str, assists: str) -> Page:
     """Adds a new player to the team."""
+
     if name.strip() == "":
         return Page(state, [
             Text("Please enter a player name."),
@@ -133,6 +151,9 @@ def add_player_submit(state: State, name: str,
         Button("Home", "/")
     ])
 
+
+# PLAYER STATISTICS
+
 @route
 def stats(state: State) -> Page:
     """Allows users to select a player to view their stats."""
@@ -148,7 +169,11 @@ def stats(state: State) -> Page:
 
         for player in state.players:
             content.append(
-                Button(player.name, view_stats, player.name)
+                Button(
+                    player.name,
+                    view_stats,
+                    arguments={"name": player.name}
+                )
             )
 
     content.append(Button("Home", "/"))
@@ -181,7 +206,7 @@ def view_stats(state: State, name: str) -> Page:
     ])
 
 
-
+# UPDATE PLAYER STATISTICS
 
 @route
 def update_player(state: State) -> Page:
@@ -204,36 +229,90 @@ def update_player(state: State) -> Page:
             )
 
     content.append(Button("Home", "/"))
-    return Page(state, content)
 
+    return Page(state, content)
 
 
 @route
-def stats(state: State) -> Page:
-    """Allows users to select a player to view their stats."""
-    content = [
-        Text("PLAYER STATISTICS"),
-        Text("--------------------")
-    ]
+def update_stats(state: State, name: str) -> Page:
+    """Allows users to edit a player's statistics."""
 
-    if len(state.players) == 0:
-        content.append(Text("No players available."))
-    else:
-        content.append(Text("Select a player:"))
+    for player in state.players:
+        if player.name == name:
+            return Page(state, [
+                Text("UPDATE STATS FOR " + player.name.upper()),
+                Text("--------------------"),
+                Text("Enter the player's new statistics:"),
 
-        for player in state.players:
-            content.append(
+                Text("Points:"),
+                TextBox("points", str(player.points)),
+
+                Text("Rebounds:"),
+                TextBox("rebounds", str(player.rebounds)),
+
+                Text("Assists:"),
+                TextBox("assists", str(player.assists)),
+
                 Button(
-                    player.name,
-                    view_stats,
-                    arguments={"name": player.name}
-                )
+                    "Save Statistics",
+                    save_stats,
+                    arguments={"name": name}
+                ),
+
+                Button("Cancel", update_player)
+            ])
+
+    return Page(state, [
+        Text("Player not found."),
+        Button("Home", "/")
+    ])
+
+
+@route
+def save_stats(state: State, name: str,
+               points: str, rebounds: str,
+               assists: str) -> Page:
+    """Saves the updated player statistics."""
+
+    if (not points.isdigit()
+            or not rebounds.isdigit()
+            or not assists.isdigit()):
+
+        return Page(state, [
+            Text("Please enter numbers for all statistics."),
+            Button(
+                "Try Again",
+                update_stats,
+                arguments={"name": name}
             )
+        ])
 
-    content.append(Button("Home", "/"))
+    for player in state.players:
+        if player.name == name:
 
-    return Page(state, content)
+            player.points = int(points)
+            player.rebounds = int(rebounds)
+            player.assists = int(assists)
 
+            return Page(state, [
+                Text("STATISTICS SUCCESSFULLY UPDATED!"),
+                Text("--------------------"),
+                Text("Player: " + player.name),
+                Text("Points: " + str(player.points)),
+                Text("Rebounds: " + str(player.rebounds)),
+                Text("Assists: " + str(player.assists)),
+                Button("Home", "/"),
+                Button("Update Another Player", update_player),
+                Button("View Statistics", stats)
+            ])
+
+    return Page(state, [
+        Text("Player not found."),
+        Button("Home", "/")
+    ])
+
+
+# LEADERBOARD
 
 @route
 def leaderboard(state: State) -> Page:
@@ -265,6 +344,9 @@ def leaderboard(state: State) -> Page:
 
     return Page(state, content)
 
+
+# DELETE PLAYER
+
 @route
 def delete_player(state: State) -> Page:
     """Allows users to choose a player to delete."""
@@ -278,10 +360,15 @@ def delete_player(state: State) -> Page:
     else:
         for player in state.players:
             content.append(
-                Button(player.name, confirm_delete, player.name)
+                Button(
+                    player.name,
+                    confirm_delete,
+                    arguments={"name": player.name}
+                )
             )
 
     content.append(Button("Home", "/"))
+
     return Page(state, content)
 
 
@@ -293,7 +380,11 @@ def confirm_delete(state: State, name: str) -> Page:
     return Page(state, [
         Text("DELETE " + name + "?"),
         Text("Are you sure you want to remove this player?"),
-        Button("Yes, Delete Player", remove_player, name),
+        Button(
+            "Yes, Delete Player",
+            remove_player,
+            arguments={"name": name}
+        ),
         Button("Cancel", delete_player),
         Button("Home", "/")
     ])
@@ -302,6 +393,7 @@ def confirm_delete(state: State, name: str) -> Page:
 @route
 def remove_player(state: State, name: str) -> Page:
     """Removes a player from the team."""
+
     for player in state.players:
         if player.name == name:
             state.players.remove(player)
@@ -317,6 +409,9 @@ def remove_player(state: State, name: str) -> Page:
         Text("Player not found."),
         Button("Home", "/")
     ])
+
+
+# TEAM SETTINGS
 
 @route
 def team_settings(state: State) -> Page:
@@ -336,6 +431,7 @@ def team_settings(state: State) -> Page:
 @route
 def save_team_name(state: State, team_name: str) -> Page:
     """Changes the basketball team's name."""
+
     if team_name.strip() == "":
         return Page(state, [
             Text("Please enter a team name."),
@@ -364,28 +460,8 @@ def record_game(state: State) -> Page:
         Button("Home", "/")
     ])
 
-@route
-def index(state: State) -> Page:
-    """Displays the basketball tracker homepage."""
-    return Page(state, [
-        Text("🏀 BASKETBALL TRACKER 🏀"),
-        Text("--------------------"),
-        Text("Welcome to your basketball dashboard!"),
-        Text("Team: " + state.team_name),
-        Text("Games Played: " + str(state.games_played)),
-        Text("Total Players: " + str(len(state.players))),
-        Text("--------------------"),
-        Text("WHAT WOULD YOU LIKE TO DO?"),
-        Button("View Players", players),
-        Button("Add Player", add_player),
-        Button("Player Statistics", stats),
-        Button("Update Statistics", update_player),
-        Button("Leaderboard", leaderboard),
-        Button("Delete Player", delete_player),
-        Button("Team Settings", team_settings)
-    ])
 
+# START WEBSITE
 
 start_server(State())
-
 
